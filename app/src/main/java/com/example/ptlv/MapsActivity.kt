@@ -1,12 +1,10 @@
 package com.example.ptlv
 
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.example.ptlv.databinding.ActivityMapsBinding
@@ -18,7 +16,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var binding: ActivityMapsBinding
     var marker: Marker? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    /*override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
@@ -30,7 +28,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         move_marker_to(mMap,12.0,12.0)
-    }
+    }*/
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap

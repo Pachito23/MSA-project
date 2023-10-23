@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">PTLV</string>
-    <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_maps">PTLV - Public Transport Location Live</string>
+
+    <string-array name="planets_array">
+        <item>Mercury</item>
+        <item>Venus</item>
+        <item>Earth</item>
+    </string-array>
 </resources>
