@@ -21,31 +21,31 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val spinner = view.findViewById<Spinner>(R.id.spinner)
-
-        val adapter = ArrayAdapter.createFromResource(
-            requireContext(),
-            R.array.spinner_options, android.R.layout.simple_spinner_item
-        )
-
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
-
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                val selectedItem = parent?.getItemAtPosition(position).toString()
-                // Do something with the selected item
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do something when nothing is selected
-            }
-        }
+//        val spinner = view.findViewById<Spinner>(R.id.spinner)
+//
+//        val adapter = ArrayAdapter.createFromResource(
+//            requireContext(),
+//            R.array.spinner_options, android.R.layout.simple_spinner_item
+//        )
+//
+//        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+//        spinner.adapter = adapter
+//
+//        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+//            override fun onItemSelected(
+//                parent: AdapterView<*>?,
+//                view: View?,
+//                position: Int,
+//                id: Long
+//            ) {
+//                val selectedItem = parent?.getItemAtPosition(position).toString()
+//                // Do something with the selected item
+//            }
+//
+//            override fun onNothingSelected(parent: AdapterView<*>?) {
+//                // Do something when nothing is selected
+//            }
+//        }
 
         val myButton = view.findViewById<Button>(R.id.Map)
 
