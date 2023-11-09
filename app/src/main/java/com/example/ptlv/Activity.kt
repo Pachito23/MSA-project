@@ -58,7 +58,7 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
         replaceFragment(main)
 
         buildGoogleApiClient()
-        locate_me()
+        //locate_me()
     }
 
     fun locate_me() {
