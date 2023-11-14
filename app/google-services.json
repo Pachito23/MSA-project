@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "518374266142",
+    "project_id": "ptlv-402713",
+    "storage_bucket": "ptlv-402713.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518374266142:android:38966173fcd2dbec12a50f",
+        "android_client_info": {
+          "package_name": "com.example.ptlv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM8nby4Kh217Aqdd7Bzc1eu1wjUuGBCOE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

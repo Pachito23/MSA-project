@@ -2,15 +2,18 @@ package com.example.ptlv
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Paint
 import android.location.Location
 import android.location.LocationManager
 import android.media.audiofx.Equalizer.Settings
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
@@ -31,9 +34,16 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.database.*
+import com.google.firebase.database.ktx.database
+import com.google.firebase.database.ktx.getValue
+import com.google.firebase.ktx.Firebase
 
 @Suppress("DEPRECATION")
 class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms.location.LocationListener  {
+
+    var firebaseDatabase: FirebaseDatabase? = null
+    var databaseReference: DatabaseReference? = null
 
     private var REQUEST_LOCATION_CODE = 101
     private var mGoogleApiClient: GoogleApiClient? = null
@@ -51,14 +61,49 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
         var main = MainFragment()
     }
 
+    private fun getdata(data_to_retrieve: String) {
+
+        //firebase realtime database references
+        firebaseDatabase = FirebaseDatabase.getInstance()
+        databaseReference = firebaseDatabase!!.getReference(data_to_retrieve)
+
+        //we add an event listener to verify when the data is changed
+        databaseReference!!.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+                //get the value of the asked item
+                val value = snapshot.getValue<String>()
+
+                Log.d(TAG, "Value is: " + value)
+
+                Toast.makeText(this@Activity, "Data got: " + value.toString(), Toast.LENGTH_SHORT).show()
+                println("Got smth")
+            }
+
+            //error getting the data
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@Activity, "Fail to get data.", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         replaceFragment(main)
 
+        val database = Firebase.database
+        val myRef = database.getReference("message")
+
+        myRef.setValue("Hello, World!")
+
+        getdata("Test")
+
         buildGoogleApiClient()
-        //locate_me()
+        locate_me()
+
+        //getdata("Test")
     }
 
     fun locate_me() {
@@ -103,8 +148,8 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient!!,
-            mLocationRequest!!, this)
+        //LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient!!,
+        //    mLocationRequest!!, this)
     }
 
     @Synchronized
