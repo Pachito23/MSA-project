@@ -64,7 +64,7 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
     private fun getdata(data_to_retrieve: String) {
 
         //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance()
+        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
         databaseReference = firebaseDatabase!!.getReference(data_to_retrieve)
 
         //we add an event listener to verify when the data is changed
