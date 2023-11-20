@@ -23,7 +23,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import com.example.ptlv.databinding.ActivityMapsBinding
 import com.example.ptlv.databinding.FragmentMapBinding
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationRequest
@@ -232,35 +231,6 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
         val fragmentTransaction = supportFragmentManager.beginTransaction()
         fragmentTransaction.replace(R.id.frameLayout,fragment)
         fragmentTransaction.commit()
-    }
-
-    fun MapView() {
-        setContentView(R.layout.fragment_map)
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
-
-        val BackButton = findViewById<ImageView>(R.id.BackButton)
-
-        BackButton.setOnClickListener {
-            // Code to be executed when the button is clicked
-            // For example, you can display a toast message
-            Toast.makeText(this, "Button Clicked!", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun create_map(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        binding = FragmentMapBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
