@@ -60,6 +60,7 @@
         android:id="@+id/Map"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp"
         android:text="Map"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -69,7 +70,7 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="45dp"
         android:text="Please choose your mean of transportation"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toEndOf="parent"
@@ -88,7 +89,7 @@
 <!--        tools:src="@tools:sample/avatars" />-->
 
         <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/map"
+        android:id="@+id/map2"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="300dp"
         android:layout_height="300dp"

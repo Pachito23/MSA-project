@@ -23,6 +23,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import com.example.ptlv.databinding.ActivityMapsBinding
 import com.example.ptlv.databinding.FragmentMapBinding
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationRequest
@@ -76,7 +77,7 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
 
                 Log.d(TAG, "Value is: " + value)
 
-                Toast.makeText(this@Activity, "Data got: " + value.toString(), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@Activity, "Database connected: " + value.toString(), Toast.LENGTH_SHORT).show()
                 println("Got smth")
             }
 
@@ -93,17 +94,12 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
 
         replaceFragment(main)
 
-        val database = Firebase.database
-        val myRef = database.getReference("message")
-
-        myRef.setValue("Hello, World!")
-
         getdata("Test")
 
-        buildGoogleApiClient()
-        locate_me()
+        //buildGoogleApiClient()
+        //locate_me()
 
-        //getdata("Test")
+        getdata("Test")
     }
 
     fun locate_me() {
@@ -148,6 +144,7 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+        // to solve !!!!
         //LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient!!,
         //    mLocationRequest!!, this)
     }
