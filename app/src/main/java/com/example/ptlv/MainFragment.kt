@@ -6,8 +6,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 
-class MainFragment : Fragment() {
+class MainFragment : Fragment(), OnMapReadyCallback {
+
+    private lateinit var mMap: GoogleMap
+    var marker: Marker? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -15,6 +25,12 @@ class MainFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_main, container, false)
+
+        // Initialize map fragment
+        val supportMapFragment =
+            childFragmentManager.findFragmentById(R.id.small_map) as SupportMapFragment?
+        supportMapFragment?.getMapAsync(this)
+
         return view
     }
 
@@ -56,5 +72,18 @@ class MainFragment : Fragment() {
             var mainActivityView = (activity as Activity)
             mainActivityView.replaceFragment(Activity.map)
         }
+    }
+
+    override fun onMapReady(my_map: GoogleMap) {
+        mMap = my_map
+
+        val my_location = LatLng(-33.852, 151.211)
+        my_map.addMarker(
+            MarkerOptions()
+                .position(my_location)
+                .title("Me")
+        )
+        marker = mMap.addMarker(MarkerOptions().position(my_location).title("Marker in Timisoara"))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(my_location, 15f))
     }
 }

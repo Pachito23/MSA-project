@@ -89,7 +89,7 @@
 <!--        tools:src="@tools:sample/avatars" />-->
 
         <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/map2"
+        android:id="@+id/small_map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="300dp"
         android:layout_height="300dp"

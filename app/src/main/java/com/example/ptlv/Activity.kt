@@ -7,15 +7,11 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Paint
 import android.location.Location
 import android.location.LocationManager
-import android.media.audiofx.Equalizer.Settings
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -23,21 +19,17 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import com.example.ptlv.databinding.FragmentMapBinding
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.*
-import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
-import com.google.firebase.ktx.Firebase
 
 @Suppress("DEPRECATION")
 class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms.location.LocationListener  {
@@ -53,7 +45,6 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
     private val FASTEST_INTERVAL: Long = 2000 /* 2 sec */
 
     private lateinit var mMap: GoogleMap
-    lateinit var binding: FragmentMapBinding
     var marker: Marker? = null
 
     companion object{
@@ -74,10 +65,12 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
                 //get the value of the asked item
                 val value = snapshot.getValue<String>()
 
-                Log.d(TAG, "Value is: " + value)
+                Log.d(TAG, "Value is: $value")
 
-                Toast.makeText(this@Activity, "Database connected: " + value.toString(), Toast.LENGTH_SHORT).show()
-                println("Got smth")
+                if(data_to_retrieve == "Database-Status")
+                {
+                    Toast.makeText(this@Activity, "Database Status: " + value.toString(), Toast.LENGTH_SHORT).show()
+                }
             }
 
             //error getting the data
@@ -93,12 +86,10 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
 
         replaceFragment(main)
 
-        getdata("Test")
+        getdata("Database-Status")
 
         //buildGoogleApiClient()
         //locate_me()
-
-        getdata("Test")
     }
 
     fun locate_me() {
