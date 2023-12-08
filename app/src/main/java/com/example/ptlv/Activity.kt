@@ -28,8 +28,20 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.FirebaseApp
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.getValue
+
+/*
+
+    To do:
+        -add my location
+        -increase database entries
+
+        Extra:
+            * add placeholders to spinners
+
+ */
 
 @Suppress("DEPRECATION")
 class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms.location.LocationListener  {
@@ -100,19 +112,19 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 //Location Permission already granted
-                getLocation();
+                getLocation()
             } else {
                 //Request Location Permission
                 checkLocationPermission()
             }
         } else {
-            getLocation();
+            getLocation()
         }
     }
 
     @SuppressLint("MissingPermission")
     private fun getLocation() {
-        mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient!!);
+        mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient!!)
 
         if (mLocation == null) {
             startLocationUpdates()
@@ -168,7 +180,7 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
 
     private fun isLocationEnabled(): Boolean {
         var locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        return locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager!!.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
     private fun checkLocationPermission() {
@@ -213,7 +225,7 @@ class Activity : AppCompatActivity(), OnMapReadyCallback, com.google.android.gms
 
     override fun onStop() {
         super.onStop()
-        if (mGoogleApiClient!!.isConnected()) {
+        if (mGoogleApiClient!!.isConnected) {
             mGoogleApiClient!!.disconnect()
         }
     }
