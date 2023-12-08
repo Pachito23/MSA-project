@@ -36,7 +36,6 @@ import com.google.firebase.database.ktx.getValue
 
     To do:
         -add my location
-        -increase database entries
 
         Extra:
             * add placeholders to spinners
