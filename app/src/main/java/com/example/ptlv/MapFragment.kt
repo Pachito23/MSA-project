@@ -1,15 +1,21 @@
 package com.example.ptlv
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.Toast
+import android.widget.*
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -17,8 +23,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.firebase.database.*
 
-
-class MapFragment : Fragment(), OnMapReadyCallback {
+class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private var firebaseDatabase: FirebaseDatabase? = null
     private var databaseReference: DatabaseReference? = null
@@ -30,6 +35,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     data class Vehicle(val id:Int = 0, val nextStop:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0)
     var vehicle_list:MutableList<Vehicle> = mutableListOf()
     private var vehicle_marker_list:MutableList<Marker> = mutableListOf()
+
+    private var locationRequest: LocationRequest = LocationRequest.create()
+        .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+        .setInterval(1000)
+    private var locationCallback: LocationCallback = object : LocationCallback() {}
+    private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -78,29 +89,34 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         val back_button = view.findViewById<ImageView>(R.id.BackButton)
 
         back_button.setOnClickListener {
-            // Code to be executed when the button is clicked
-            // For example, you can display a toast message
-            Toast.makeText(requireContext(), "Button Clicked!!!", Toast.LENGTH_SHORT).show()
             val mainActivityView = (activity as Activity)
             mainActivityView.replaceFragment(Activity.main)
         }
     }
 
     override fun onMapReady(my_map: GoogleMap) {
-        mMap = my_map
-
-        val location = LatLng(45.7469027, 21.2259882)
+        Activity.Gps_Status(requireContext())
 
         get_stops(Activity.main.type,Activity.main.line)
         get_vehicles(Activity.main.type,Activity.main.line)
-        marker = mMap.addMarker(MarkerOptions().position(location).title("Marker in Timisoara"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15f))
 
-        // Apply custom map style to hide public transportation icons
+        my_map.moveCamera(CameraUpdateFactory.newLatLngZoom(Activity.default_location, Activity.default_zoom))
+
         try {
-            val success = mMap.setMapStyle(
-                MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.big_map_config)
-            )
+            // Hide unwanted icons
+            val success = my_map.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.big_map_config))
+
+            my_map?.let {
+                mMap = it
+                if (checkLocationPermission()) {
+                    // Enable My Location layer if permission is granted
+                    mMap.isMyLocationEnabled = true
+
+                    // Start requesting location updates
+                    startLocationUpdates()
+                }
+            }
 
             if (!success) {
                 println("Failed to load map with custom config")
@@ -108,6 +124,57 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         } catch (e: Exception) {
             println(e)
         }
+    }
+
+    private fun checkLocationPermission(): Boolean {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            return true
+        } else {
+            ActivityCompat.requestPermissions(
+                requireContext() as android.app.Activity, // ?
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+            return false
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, enable the My Location layer and start location updates
+                onMapReady(mMap)
+            } else {
+                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onLocationChanged(location: Location) {
+        // Called when the location has changed
+        val currentLocation = LatLng(location.latitude, location.longitude)
+    }
+
+    private fun startLocationUpdates() {
+        if (checkLocationPermission()) {
+            LocationServices.getFusedLocationProviderClient(requireContext())
+                .requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Stop location updates when the fragment is paused
+        LocationServices.getFusedLocationProviderClient(requireContext())
+            .removeLocationUpdates(locationCallback)
     }
 
     private fun get_vehicles(type:String, line: String) {

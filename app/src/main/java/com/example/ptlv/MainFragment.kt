@@ -1,11 +1,18 @@
 package com.example.ptlv
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -14,8 +21,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.*
+import com.google.android.gms.location.LocationCallback
 
-class MainFragment : Fragment(), OnMapReadyCallback {
+
+class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private lateinit var mMap: GoogleMap
     var marker: Marker? = null
@@ -29,6 +38,12 @@ class MainFragment : Fragment(), OnMapReadyCallback {
 
     var type: String = ""
     var line: String = ""
+
+    private var locationRequest: LocationRequest = LocationRequest.create()
+        .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+        .setInterval(1000)
+    private var locationCallback: LocationCallback = object : LocationCallback() {}
+    private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
     data class Transport_Type(
         val name: String = ""
@@ -48,7 +63,7 @@ class MainFragment : Fragment(), OnMapReadyCallback {
 
                 for (childSnapshot in snapshot.children) {
                     val modeName = childSnapshot.key
-                    if (modeName != null && modeName != "Database-Status") {
+                    if (modeName != null) {
                         transportModes.add(modeName)
                     }
                 }
@@ -77,7 +92,7 @@ class MainFragment : Fragment(), OnMapReadyCallback {
 
                 for (childSnapshot in snapshot.children) {
                     val modeName = childSnapshot.key
-                    if (modeName != null && modeName != "Database-Status") {
+                    if (modeName != null) {
                         transportLines.add(modeName)
                     }
                 }
@@ -150,8 +165,6 @@ class MainFragment : Fragment(), OnMapReadyCallback {
         val myButton = view.findViewById<Button>(R.id.Map)
 
         myButton.setOnClickListener {
-            // Code to be executed when the button is clicked
-            // For example, you can display a toast message
             var mainActivityView = (activity as Activity)
             mainActivityView.replaceFragment(Activity.map)
         }
@@ -159,32 +172,84 @@ class MainFragment : Fragment(), OnMapReadyCallback {
 
     fun AddSpinnerEntries(entries_list: MutableList<String>, spinner_id: Spinner)
     {
-        // Create an ArrayAdapter using the list
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
             entries_list
         )
 
-        // Set the layout resource to create the drop-down views
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
-        // Set the adapter to the spinner
         if (spinner_id != null) {
             spinner_id.adapter = adapter
         }
     }
 
     override fun onMapReady(my_map: GoogleMap) {
-        mMap = my_map
+        Activity.Gps_Status(requireContext())
 
-        val my_location = LatLng(-33.852, 151.211)
-        my_map.addMarker(
-            MarkerOptions()
-                .position(my_location)
-                .title("Me")
-        )
-        marker = mMap.addMarker(MarkerOptions().position(my_location).title("Marker in Timisoara"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(my_location, 15f))
+        my_map?.let {
+            mMap = it
+            if (checkLocationPermission()) {
+                // Enable My Location layer if permission is granted
+                mMap.isMyLocationEnabled = true
+
+                // Start requesting location updates
+                startLocationUpdates()
+            }
+        }
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Activity.default_location, Activity.default_zoom + 1f))
+    }
+
+    private fun checkLocationPermission(): Boolean {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            return true
+        } else {
+            ActivityCompat.requestPermissions(
+                requireContext() as android.app.Activity, // ?
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+            return false
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, enable the My Location layer and start location updates
+                onMapReady(mMap)
+            } else {
+                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onLocationChanged(location: Location) {
+        // Called when the location has changed
+        val currentLocation = LatLng(location.latitude, location.longitude)
+    }
+
+    private fun startLocationUpdates() {
+        if (checkLocationPermission()) {
+            LocationServices.getFusedLocationProviderClient(requireContext())
+                .requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Stop location updates when the fragment is paused
+        LocationServices.getFusedLocationProviderClient(requireContext())
+            .removeLocationUpdates(locationCallback)
     }
 }
