@@ -14,8 +14,4 @@
         <item>Other</item>
     </string-array>
 
-
-
-    <string name="spinner_prompt">Select an option</string>
-
 </resources>

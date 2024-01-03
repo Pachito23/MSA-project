@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
+import android.telephony.CarrierConfigManager.Gps
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +20,6 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.*
 import com.google.android.gms.location.LocationCallback
 
@@ -165,8 +165,13 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
         val myButton = view.findViewById<Button>(R.id.Map)
 
         myButton.setOnClickListener {
-            var mainActivityView = (activity as Activity)
-            mainActivityView.replaceFragment(Activity.map)
+            if(line != "")
+            {
+                var mainActivityView = (activity as Activity)
+                mainActivityView.replaceFragment(Activity.map)
+            }
+            else
+                Toast.makeText(requireContext(), "Please wait, data is loading", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -186,6 +191,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
     }
 
     override fun onMapReady(my_map: GoogleMap) {
+
         Activity.Gps_Status(requireContext())
 
         my_map?.let {
@@ -199,7 +205,14 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
             }
         }
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Activity.default_location, Activity.default_zoom + 1f))
+        // EventListener for the My Location Button on Map
+        mMap.setOnMyLocationButtonClickListener {
+            Activity.Gps_Status(requireContext(),true)
+            //to allow default behaviour, use true to consume event and prevent the default behavior
+            false
+        }
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Activity.default_location, Activity.default_zoom_city + 1f))
     }
 
     private fun checkLocationPermission(): Boolean {

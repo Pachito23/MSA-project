@@ -11,30 +11,37 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.TextView
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.gms.location.*
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import com.google.firebase.database.*
 
-class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
+
+class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private var firebaseDatabase: FirebaseDatabase? = null
     private var databaseReference: DatabaseReference? = null
+    private var databaseListener: ValueEventListener? = null
+
     private lateinit var mMap: GoogleMap
-    lateinit var marker_clicked: Marker
 
     data class Stop(val name:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0)
     var stop_list:MutableList<Stop> = mutableListOf()
-    data class Vehicle(val id:Int = 0, val nextStop:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0)
-    var vehicle_list:MutableList<Vehicle> = mutableListOf()
-    private var vehicle_marker_list:MutableList<Marker> = mutableListOf()
+
+    data class Vehicle(val id:Int = 0, val nextStop:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0,
+                        val humidity:Int = 0, val temp:Double = 0.0, val time_to_next_stop:Int = 0, val air_quality:String = "N/a")
+    var vehicle_key:String = ""
+    lateinit var vehicle:Vehicle
+    var vehicle_marker: Marker? = null
 
     private var locationRequest: LocationRequest = LocationRequest.create()
         .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -42,7 +49,12 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
     private var locationCallback: LocationCallback = object : LocationCallback() {}
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
-    private var databaseListener: ValueEventListener? = null
+    lateinit var VehicleNameTextView:TextView
+    lateinit var NextStationTextView:TextView
+    lateinit var AirQualityTextView:TextView
+    lateinit var TempInsideTextView:TextView
+    lateinit var TempOutsideTextView:TextView
+    lateinit var HumidityTextView:TextView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -50,34 +62,21 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
     ): View? {
 
         // Initialize view
-        val view = inflater.inflate(R.layout.fragment_map, container, false)
+        val view = inflater.inflate(R.layout.fragment_vehicle, container, false)
 
         // Initialize map fragment
         val supportMapFragment =
-            childFragmentManager.findFragmentById(R.id.big_map) as SupportMapFragment?
+            childFragmentManager.findFragmentById(R.id.VehicleMap) as SupportMapFragment?
         supportMapFragment?.getMapAsync(this)
 
-        //My marker initialization
-        var my_marker: Marker? = null
-        var init_marker = false
+        retrieve_vehicle_info(Activity.map.marker_clicked)
 
-        // Async map
-        supportMapFragment!!.getMapAsync { googleMap ->
-            // When map is loaded
-            googleMap.setOnMapClickListener { latLng -> // When clicked on map
-                if(!init_marker)
-                {
-                    my_marker = mMap.addMarker(MarkerOptions().position(latLng).title("My Marker"))!!
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
-                    init_marker = true
-                }
-                else
-                {
-                    my_marker!!.position =  latLng
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
-                }
-            }
-        }
+        VehicleNameTextView = view.findViewById<TextView>(R.id.VehicleName)
+        NextStationTextView = view.findViewById<TextView>(R.id.NextStation)
+        AirQualityTextView = view.findViewById<TextView>(R.id.AirQuality)
+        TempInsideTextView = view.findViewById<TextView>(R.id.TempInside)
+        TempOutsideTextView = view.findViewById<TextView>(R.id.TempOutside)
+        HumidityTextView = view.findViewById<TextView>(R.id.Humidity)
 
         // Return view
         return view
@@ -86,25 +85,17 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val back_button = view.findViewById<ImageView>(R.id.BackButton)
+        val back_button = view.findViewById<Button>(R.id.BackButton2)
 
         back_button.setOnClickListener {
+            remove_listener_to_db() //Maybe here is why is dying and this will fix it?
             val mainActivityView = (activity as Activity)
-            mainActivityView.replaceFragment(Activity.main)
+            mainActivityView.replaceFragment(Activity.map)
         }
     }
 
     override fun onMapReady(my_map: GoogleMap) {
-        get_stops(Activity.main.type,Activity.main.line)
-        get_vehicles(Activity.main.type,Activity.main.line)
-
-        Activity.Gps_Status(requireContext())
-
-        my_map.setOnMarkerClickListener { marker ->
-            onMarkerClick(marker)
-            true // Return true to indicate that the click event has been consumed
-        }
-
+        get_stops(Activity.main.type, Activity.main.line)
 
         my_map.moveCamera(CameraUpdateFactory.newLatLngZoom(Activity.default_location, Activity.default_zoom_city))
 
@@ -131,27 +122,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
             println(e)
         }
 
-        // EventListener for the My Location Button on Map
-        mMap.setOnMyLocationButtonClickListener {
-            Activity.Gps_Status(requireContext(),true)
-            //to allow default behaviour, use true to consume event and prevent the default behavior
-            false
-        }
-
-    }
-
-    private fun onMarkerClick(marker: Marker): Boolean {
-        //There was a vehicle marker info click
-        if(vehicle_marker_list.contains(marker))
-        {
-            marker_clicked = marker
-            val mainActivityView = (activity as Activity)
-            mainActivityView.replaceFragment(Activity.vehicle_details)
-        }else {
-            marker.showInfoWindow()
-        }
-
-        return true // Return true to indicate that the click event has been consumed
+        // Set the map not draggable, with no location button, non-zoomable and with no toolbar
+        my_map.uiSettings.isScrollGesturesEnabled = false
+        my_map.uiSettings.isMyLocationButtonEnabled = false
+        my_map.uiSettings.isZoomGesturesEnabled = false
+        my_map.uiSettings.isMapToolbarEnabled = false
     }
 
     private fun checkLocationPermission(): Boolean {
@@ -212,35 +187,78 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         }
     }
 
-    private fun get_vehicles(type:String, line: String) {
-
-        if (type == "" || line == "")
-            return
-
-        //firebase realtime database references
+    private fun retrieve_vehicle_info(marker: Marker) {
         firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/$type/$line/Vehicles")
+        databaseReference = firebaseDatabase!!.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/")
 
         //we add an event listener to verify when the data is changed
-        databaseReference!!.addValueEventListener(object : ValueEventListener {
+        databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                vehicle_list.clear()
 
                 for (snap in snapshot.children) {
                     val vehicle = snap.getValue(Vehicle::class.java)
-                    vehicle?.let {
-                        vehicle_list.add(it)
-                    }
+                    val key = snap.key
+                    if (vehicle!!.id.toString() == marker.title)
+                        vehicle_key = key.toString()
                 }
-
-                updateMarkersVehicles(type)
+                get_vehicle_data(Activity.map.marker_clicked)
             }
 
             //error getting the data
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(requireContext(), "Fail to get data.", Toast.LENGTH_SHORT).show()
             }
-        }).also { databaseListener = it }
+        })
+    }
+
+    private fun get_vehicle_data(marker: Marker) {
+
+        //firebase realtime database references
+        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
+        databaseReference = firebaseDatabase!!.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/${vehicle_key}")
+
+        //we add an event listener to verify when the data is changed
+        databaseReference!!.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+                vehicle = snapshot.getValue(Vehicle::class.java)!!
+
+                VehicleNameTextView.text = "${Activity.main.type} - ${vehicle.id}"
+                NextStationTextView.text = "Next stop: ${vehicle.nextStop} in ${vehicle.time_to_next_stop} min"
+                TempInsideTextView.text = "Inside: ${vehicle.temp}°C"
+                AirQualityTextView.text = "Air Quality: ${vehicle.air_quality}"
+                HumidityTextView.text = "Humidity: ${vehicle.humidity}%"
+
+                updateMarkerVehicle()
+
+            }
+
+            //error getting the data
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(requireContext(), "Fail to get data.", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    fun updateMarkerVehicle()
+    {
+        //remove old marker
+        vehicle_marker?.remove()
+
+        //get position of new marker
+        val pos = LatLng(vehicle.lat, vehicle.long)
+
+        //add new marker
+        vehicle_marker = mMap.addMarker(
+            MarkerOptions()
+                .position(pos)
+                .title(vehicle.id.toString())
+                .icon(Icon_image(Activity.main.type,150,75))
+        )!!
+
+        //move marker to new location
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, Activity.default_zoom_vehicle))
+
     }
 
     private fun get_stops(type:String, line: String) {
@@ -258,7 +276,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 stop_list.clear()
 
                 for (snap in snapshot.children) {
-                    val Stop = snap.getValue(Stop::class.java)
+                    val Stop = snap.getValue(VehicleFragment.Stop::class.java)
                     Stop?.let {
                         stop_list.add(it)
                     }
@@ -274,6 +292,20 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         })
     }
 
+    fun addMarkersStops(type:String)
+    {
+        for(stop in 0 until stop_list.size)
+        {
+            val pos = LatLng(stop_list[stop].lat, stop_list[stop].long)
+            mMap.addMarker(
+                MarkerOptions()
+                    .position(pos)
+                    .title(stop_list[stop].name)
+                    .icon(Icon_image("$type Stop",60,60))
+            )
+        }
+    }
+
     private fun Other_type_stop(type: String): Boolean {
         val pattern = Regex("^[a-zA-Z_]+\\s+Stop$")
 
@@ -281,7 +313,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
     }
 
     private fun Icon_image(type: String, width: Int, height: Int): BitmapDescriptor {
-        var drawable:Drawable
+        var drawable: Drawable
         if (type == "Bus")
             drawable = resources.getDrawable(R.drawable.bus)
         else if (type == "Bus Stop")
@@ -299,47 +331,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return BitmapDescriptorFactory.fromBitmap(bitmap)
-    }
-
-    fun addMarkersStops(type:String)
-    {
-        for(stop in 0 until stop_list.size)
-        {
-            val pos = LatLng(stop_list[stop].lat, stop_list[stop].long)
-            mMap.addMarker(
-                MarkerOptions()
-                    .position(pos)
-                    .title(stop_list[stop].name)
-                    .icon(Icon_image("$type Stop",60,60))
-            )
-        }
-    }
-
-    private fun clearMarkersVehicles()
-    {
-        for(curr_maker in vehicle_marker_list)
-        {
-            curr_maker.remove()
-        }
-        vehicle_marker_list.clear()
-    }
-
-    fun updateMarkersVehicles(type: String)
-    {
-        clearMarkersVehicles()
-        for(curr_vehicle in vehicle_list)
-        {
-            val pos = LatLng(curr_vehicle.lat, curr_vehicle.long)
-            val curr_marker = mMap.addMarker(
-                MarkerOptions()
-                    .position(pos)
-                    .title(curr_vehicle.id.toString())
-                    .icon(Icon_image(type,150,75))
-            )
-            if (curr_marker != null) {
-                vehicle_marker_list.add(curr_marker)
-            }
-        }
     }
 
 }
