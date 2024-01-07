@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
-import android.telephony.CarrierConfigManager.Gps
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,6 +44,13 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
     private var locationCallback: LocationCallback = object : LocationCallback() {}
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
+    lateinit var NewsBannerTextView:TextView
+    lateinit var WarningIcon:ImageView
+    var AlertMessage:String = ""
+
+    data class Alert(val enabled:Boolean = false, val impact:String = "N/a", val message:String = "N/a")
+    var alerts_list:MutableList<Alert> = mutableListOf()
+
     data class Transport_Type(
         val name: String = ""
     )
@@ -63,7 +69,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
                 for (childSnapshot in snapshot.children) {
                     val modeName = childSnapshot.key
-                    if (modeName != null) {
+                    if (modeName != null && modeName != "Alerts") {
                         transportModes.add(modeName)
                     }
                 }
@@ -119,6 +125,8 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
             childFragmentManager.findFragmentById(R.id.small_map) as SupportMapFragment?
         supportMapFragment?.getMapAsync(this)
 
+        get_alerts()
+
         return view
     }
 
@@ -127,7 +135,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
         transport_type_spinner = view.findViewById<Spinner>(R.id.transportModeSpinner)
         transport_line_spinner = view.findViewById<Spinner>(R.id.transportLineSpinner)
-
 
         get_transport_type()
 
@@ -173,6 +180,50 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
             else
                 Toast.makeText(requireContext(), "Please wait, data is loading", Toast.LENGTH_SHORT).show()
         }
+
+        NewsBannerTextView = view.findViewById<TextView>(R.id.GeneralNews)
+        NewsBannerTextView.visibility = View.INVISIBLE
+        NewsBannerTextView.isSelected = true
+        WarningIcon = view.findViewById<ImageView>(R.id.WarningIcon)
+        WarningIcon.visibility = View.INVISIBLE
+    }
+
+    private fun get_alerts() {
+
+        //firebase realtime database references
+        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
+        databaseReference = firebaseDatabase!!.getReference("/Alerts")
+
+        //we add an event listener to verify when the data is changed
+        databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                alerts_list.clear()
+
+                for (snap in snapshot.children) {
+                    val alert = snap.getValue(MainFragment.Alert::class.java)
+                    alert?.let {
+                        if(alert.enabled)
+                        {
+                            alerts_list.add(it)
+                            AlertMessage+= it.message + "             "
+                        }
+                    }
+                }
+
+                if (alerts_list.size != 0)
+                {
+                    NewsBannerTextView.text = AlertMessage
+                    NewsBannerTextView.visibility = View.VISIBLE
+
+                    WarningIcon.visibility = View.VISIBLE
+                }
+            }
+
+            //error getting the data
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(requireContext(), "Fail to get data.", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     fun AddSpinnerEntries(entries_list: MutableList<String>, spinner_id: Spinner)

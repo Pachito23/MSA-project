@@ -12,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -34,6 +35,9 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private lateinit var mMap: GoogleMap
 
+    data class Alert(val enabled:Boolean = false, val impact:String = "N/a", val message:String = "N/a")
+    var alerts_list:MutableList<Alert> = mutableListOf()
+
     data class Stop(val name:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0)
     var stop_list:MutableList<Stop> = mutableListOf()
 
@@ -49,12 +53,17 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
     private var locationCallback: LocationCallback = object : LocationCallback() {}
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
-    lateinit var VehicleNameTextView:TextView
+    lateinit var VehicleLineTextView:TextView
+    lateinit var VehicleTypeTextView:TextView
     lateinit var NextStationTextView:TextView
     lateinit var AirQualityTextView:TextView
     lateinit var TempInsideTextView:TextView
     lateinit var TempOutsideTextView:TextView
     lateinit var HumidityTextView:TextView
+
+    lateinit var NewsBannerTextView:TextView
+    lateinit var WarningIcon: ImageView
+    var AlertMessage:String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -70,13 +79,24 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         supportMapFragment?.getMapAsync(this)
 
         retrieve_vehicle_info(Activity.map.marker_clicked)
+        get_alerts(Activity.main.type,Activity.main.line)
 
-        VehicleNameTextView = view.findViewById<TextView>(R.id.VehicleName)
+        VehicleLineTextView = view.findViewById<TextView>(R.id.VehicleLine)
+        VehicleTypeTextView = view.findViewById<TextView>(R.id.VehicleType)
         NextStationTextView = view.findViewById<TextView>(R.id.NextStation)
         AirQualityTextView = view.findViewById<TextView>(R.id.AirQuality)
         TempInsideTextView = view.findViewById<TextView>(R.id.TempInside)
         TempOutsideTextView = view.findViewById<TextView>(R.id.TempOutside)
         HumidityTextView = view.findViewById<TextView>(R.id.Humidity)
+
+        NewsBannerTextView = view.findViewById<TextView>(R.id.NewsVehicle)
+        NewsBannerTextView.visibility = View.INVISIBLE
+        NewsBannerTextView.isSelected = true
+        WarningIcon = view.findViewById<ImageView>(R.id.VehicleWarningIcon)
+        WarningIcon.visibility = View.INVISIBLE
+
+        VehicleLineTextView.text = "${Activity.main.line}"
+        VehicleTypeTextView.text = "${Activity.main.type}"
 
         // Return view
         return view
@@ -223,7 +243,6 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
                 vehicle = snapshot.getValue(Vehicle::class.java)!!
 
-                VehicleNameTextView.text = "${Activity.main.type} - ${vehicle.id}"
                 NextStationTextView.text = "Next stop: ${vehicle.nextStop} in ${vehicle.time_to_next_stop} min"
                 TempInsideTextView.text = "Inside: ${vehicle.temp}°C"
                 AirQualityTextView.text = "Air Quality: ${vehicle.air_quality}"
@@ -283,6 +302,51 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 }
 
                 addMarkersStops(type)
+            }
+
+            //error getting the data
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(requireContext(), "Fail to get data.", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun is_line_impacted(alert: Alert): Boolean {
+        return alert.impact.contains("${Activity.main.type} ${Activity.main.line}")
+    }
+
+    private fun get_alerts(type:String, line: String) {
+
+        if (type == "" || line == "")
+            return
+
+        //firebase realtime database references
+        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
+        databaseReference = firebaseDatabase!!.getReference("/Alerts")
+
+        //we add an event listener to verify when the data is changed
+        databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                alerts_list.clear()
+
+                for (snap in snapshot.children) {
+                    val alert = snap.getValue(VehicleFragment.Alert::class.java)
+                    alert?.let {
+                        if(it.enabled && is_line_impacted(it))
+                        {
+                            alerts_list.add(it)
+                            AlertMessage+= it.message + "             "
+                        }
+                    }
+                }
+
+                if (alerts_list.size != 0)
+                {
+                    NewsBannerTextView.text = AlertMessage
+                    NewsBannerTextView.visibility = View.VISIBLE
+
+                    WarningIcon.visibility = View.VISIBLE
+                }
             }
 
             //error getting the data

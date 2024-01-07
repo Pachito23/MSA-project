@@ -100,9 +100,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
         Activity.Gps_Status(requireContext())
 
+        my_map.uiSettings.isCompassEnabled = false
+
         my_map.setOnMarkerClickListener { marker ->
             onMarkerClick(marker)
-            true // Return true to indicate that the click event has been consumed
+            false // Return false to let the rest of the behaviour be the default one (show toolbar)
         }
 
 

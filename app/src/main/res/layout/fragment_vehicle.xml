@@ -9,6 +9,19 @@
     android:background="#F2F2F2">
 
     <TextView
+        android:id="@+id/VehicleType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:layout_marginEnd="@dimen/space_vehicle_description"
+        android:text="Vehicle Type"
+        android:textColor="#333333"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
         android:id="@+id/Humidity"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -51,11 +64,11 @@
         app:layout_constraintTop_toBottomOf="@+id/AirQuality" />
 
     <TextView
-        android:id="@+id/VehicleName"
+        android:id="@+id/VehicleLine"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
-        android:text="Vehicle Name - id"
+        android:text="Vehicle Line"
         android:textColor="#333333"
         android:textSize="28sp"
         android:textStyle="bold"
@@ -99,16 +112,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/NextStation" />
 
-<!--    <ImageView-->
-<!--        android:id="@+id/VehicleMap"-->
-<!--        android:layout_width="50dp"-->
-<!--        android:layout_height="50dp"-->
-<!--        android:layout_marginTop="30dp"-->
-<!--        android:src="@drawable/icons8_back_arrow_96"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toBottomOf="@+id/VehicleName" />-->
-
     <Button
         android:id="@+id/BackButton2"
         android:layout_width="0dp"
@@ -118,7 +121,41 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-        <androidx.fragment.app.FragmentContainerView
+    <TextView
+        android:id="@+id/NewsVehicle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:ellipsize="marquee"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:singleLine="true"
+        android:text="News1 News2 News3 News4 News5 News6 News7 News8 News9"
+        app:layout_constraintBottom_toTopOf="@+id/BackButton2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/VehicleWarningIcon" />
+
+    <ImageView
+        android:id="@+id/VehicleWarningIcon"
+        android:layout_width="22dp"
+        android:layout_height="19dp"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/BackButton2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/warning_icon" />
+
+<!--    <ImageView-->
+<!--        android:id="@+id/VehicleMap"-->
+<!--        android:layout_width="50dp"-->
+<!--        android:layout_height="50dp"-->
+<!--        android:layout_marginTop="30dp"-->
+<!--        android:src="@drawable/icons8_back_arrow_96"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toBottomOf="@+id/VehicleLine" />-->
+
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/VehicleMap"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="300dp"
@@ -126,7 +163,7 @@
         android:layout_marginTop="30dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/VehicleName" />
+        app:layout_constraintTop_toBottomOf="@+id/VehicleLine" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
