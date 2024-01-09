@@ -1,6 +1,7 @@
 package com.example.ptlv
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -8,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,11 +31,11 @@ import com.google.firebase.database.*
 
 class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
-    private var firebaseDatabase: FirebaseDatabase? = null
     private var databaseReference: DatabaseReference? = null
     private var databaseListener: ValueEventListener? = null
 
     private lateinit var mMap: GoogleMap
+    private var map_loaded = false
 
     var alerts_list:MutableList<Activity.Alert> = mutableListOf()
 
@@ -77,7 +79,6 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
             childFragmentManager.findFragmentById(R.id.VehicleMap) as SupportMapFragment?
         supportMapFragment?.getMapAsync(this)
 
-        retrieve_vehicle_info(Activity.map.marker_clicked)
         get_alerts(Activity.main.type,Activity.main.line)
 
         VehicleLineTextView = view.findViewById<TextView>(R.id.VehicleLine)
@@ -112,14 +113,22 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         val back_button = view.findViewById<Button>(R.id.BackButton2)
 
         back_button.setOnClickListener {
-            remove_listener_to_db() //Maybe here is why is dying and this will fix it?
-            val mainActivityView = (activity as Activity)
-            mainActivityView.replaceFragment(Activity.map)
+            if(!Activity.use_stack_for_fragment)
+            {
+                val mainActivityView = (activity as Activity)
+                mainActivityView.replaceFragment(Activity.map)
+            }
+            else
+            {
+                val fragmentManager = requireActivity().supportFragmentManager
+                fragmentManager.popBackStack()
+            }
         }
     }
 
     override fun onMapReady(my_map: GoogleMap) {
         get_stops(Activity.main.type, Activity.main.line)
+        get_vehicle_data()
 
         my_map.moveCamera(CameraUpdateFactory.newLatLngZoom(Activity.default_location, Activity.default_zoom_city))
 
@@ -151,6 +160,8 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         my_map.uiSettings.isMyLocationButtonEnabled = false
         my_map.uiSettings.isZoomGesturesEnabled = false
         my_map.uiSettings.isMapToolbarEnabled = false
+
+        map_loaded = true
     }
 
     private fun checkLocationPermission(): Boolean {
@@ -206,55 +217,32 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
     }
 
     private fun remove_listener_to_db() {
-        databaseListener?.let {
-            databaseReference!!.removeEventListener(it)
-        }
+        databaseReference!!.removeEventListener(databaseListener!!)
     }
 
-    private fun retrieve_vehicle_info(marker: Marker) {
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/")
+    private fun get_vehicle_data() {
+
+        databaseReference = Activity.firebaseDatabase!!.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/Vehicle${Activity.selected_vehicle_id}")
 
         //we add an event listener to verify when the data is changed
-        databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
+        databaseListener = databaseReference!!.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                if (isAdded) {
+                    vehicle = snapshot.getValue(Vehicle::class.java)!!
 
-                for (snap in snapshot.children) {
-                    val vehicle = snap.getValue(Vehicle::class.java)
-                    val key = snap.key
-                    if (vehicle!!.id.toString() == marker.title)
-                        vehicle_key = key.toString()
+                    println(vehicle)
+                    println("Here")
+
+                    NextStationTextView.text = "Next stop: ${vehicle.nextStop} in ${vehicle.time_to_next_stop} min"
+                    TempInsideTextView.text = "Inside: ${vehicle.temp}°C"
+                    AirQualityTextView.text = "Air Quality: ${vehicle.air_quality}"
+                    HumidityTextView.text = "Humidity: ${vehicle.humidity}%"
+
+                    if (map_loaded)
+                        updateMarkerVehicle()
                 }
-                get_vehicle_data(Activity.map.marker_clicked)
             }
 
-            //error getting the data
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(requireContext(), "Fail to get data.", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun get_vehicle_data(marker: Marker) {
-
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/${vehicle_key}")
-
-        //we add an event listener to verify when the data is changed
-        databaseReference!!.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-
-                vehicle = snapshot.getValue(Vehicle::class.java)!!
-
-                NextStationTextView.text = "Next stop: ${vehicle.nextStop} in ${vehicle.time_to_next_stop} min"
-                TempInsideTextView.text = "Inside: ${vehicle.temp}°C"
-                AirQualityTextView.text = "Air Quality: ${vehicle.air_quality}"
-                HumidityTextView.text = "Humidity: ${vehicle.humidity}%"
-
-                updateMarkerVehicle()
-
-            }
 
             //error getting the data
             override fun onCancelled(error: DatabaseError) {
@@ -284,28 +272,30 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     }
 
+
     private fun get_stops(type:String, line: String) {
 
         if (type == "" || line == "")
             return
 
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/$type/$line/Stops")
+        val databaseReference = Activity.firebaseDatabase!!.getReference("/$type/$line/Stops")
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                stop_list.clear()
+                if (isAdded)
+                {
+                    stop_list.clear()
 
-                for (snap in snapshot.children) {
-                    val Stop = snap.getValue(VehicleFragment.Stop::class.java)
-                    Stop?.let {
-                        stop_list.add(it)
+                    for (snap in snapshot.children) {
+                        val Stop = snap.getValue(VehicleFragment.Stop::class.java)
+                        Stop?.let {
+                            stop_list.add(it)
+                        }
                     }
-                }
 
-                addMarkersStops(type)
+                    addMarkersStops(type)
+                }
             }
 
             //error getting the data
@@ -324,32 +314,33 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         if (type == "" || line == "")
             return
 
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/Alerts")
+        val databaseReference = Activity.firebaseDatabase!!.getReference("/Alerts")
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                alerts_list.clear()
+                if (isAdded)
+                {
+                    alerts_list.clear()
 
-                for (snap in snapshot.children) {
-                    val alert = snap.getValue(Activity.Alert::class.java)
-                    alert?.let {
-                        if(it.enabled && is_line_impacted(it))
-                        {
-                            alerts_list.add(it)
-                            AlertMessage+= it.message + "             "
+                    for (snap in snapshot.children) {
+                        val alert = snap.getValue(Activity.Alert::class.java)
+                        alert?.let {
+                            if(it.enabled && is_line_impacted(it))
+                            {
+                                alerts_list.add(it)
+                                AlertMessage+= it.message + "             "
+                            }
                         }
                     }
-                }
 
-                if (alerts_list.size != 0)
-                {
-                    NewsBannerTextView.text = AlertMessage
-                    NewsBannerTextView.visibility = View.VISIBLE
+                    if (alerts_list.size != 0)
+                    {
+                        NewsBannerTextView.text = AlertMessage
+                        NewsBannerTextView.visibility = View.VISIBLE
 
-                    WarningIcon.visibility = View.VISIBLE
+                        WarningIcon.visibility = View.VISIBLE
+                    }
                 }
             }
 

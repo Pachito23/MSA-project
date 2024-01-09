@@ -29,7 +29,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private lateinit var mMap: GoogleMap
     var marker: Marker? = null
-    var firebaseDatabase: FirebaseDatabase? = null
     var databaseReference: DatabaseReference? = null
 
     lateinit var transport_type_spinner: Spinner
@@ -58,24 +57,24 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     fun get_transport_type() {
 
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.reference
+        databaseReference = Activity.firebaseDatabase!!.reference
 
         transportModes.clear()
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-
-                for (childSnapshot in snapshot.children) {
-                    val modeName = childSnapshot.key
-                    if (modeName != null && modeName != "Alerts") {
-                        transportModes.add(modeName)
+                if (isAdded)
+                {
+                    for (childSnapshot in snapshot.children) {
+                        val modeName = childSnapshot.key
+                        if (modeName != null && modeName != "Alerts") {
+                            transportModes.add(modeName)
+                        }
                     }
-                }
 
-                AddSpinnerEntries(transportModes, transport_type_spinner)
+                    AddSpinnerEntries(transportModes, transport_type_spinner)
+                }
             }
 
             //error getting the data
@@ -87,24 +86,24 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     fun get_transport_line(type:String) {
 
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference(type)
+        databaseReference = Activity.firebaseDatabase!!.getReference(type)
 
         transportLines.clear()
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-
-                for (childSnapshot in snapshot.children) {
-                    val modeName = childSnapshot.key
-                    if (modeName != null) {
-                        transportLines.add(modeName)
+                if (isAdded)
+                {
+                    for (childSnapshot in snapshot.children) {
+                        val modeName = childSnapshot.key
+                        if (modeName != null) {
+                            transportLines.add(modeName)
+                        }
                     }
-                }
 
-                AddSpinnerEntries(transportLines, transport_line_spinner)
+                    AddSpinnerEntries(transportLines, transport_line_spinner)
+                }
             }
 
             //error getting the data
@@ -198,32 +197,33 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private fun get_alerts() {
 
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/Alerts")
+        databaseReference = Activity.firebaseDatabase!!.getReference("/Alerts")
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                alerts_list.clear()
+                if (isAdded)
+                {
+                    alerts_list.clear()
 
-                for (snap in snapshot.children) {
-                    val alert = snap.getValue(Activity.Alert::class.java)
-                    alert?.let {
-                        if(alert.enabled)
-                        {
-                            alerts_list.add(it)
-                            AlertMessage+= it.message + "             "
+                    for (snap in snapshot.children) {
+                        val alert = snap.getValue(Activity.Alert::class.java)
+                        alert?.let {
+                            if(alert.enabled)
+                            {
+                                alerts_list.add(it)
+                                AlertMessage+= it.message + "             "
+                            }
                         }
                     }
-                }
 
-                if (alerts_list.size != 0)
-                {
-                    NewsBannerTextView.text = AlertMessage
-                    NewsBannerTextView.visibility = View.VISIBLE
+                    if (alerts_list.size != 0)
+                    {
+                        NewsBannerTextView.text = AlertMessage
+                        NewsBannerTextView.visibility = View.VISIBLE
 
-                    WarningIcon.visibility = View.VISIBLE
+                        WarningIcon.visibility = View.VISIBLE
+                    }
                 }
             }
 

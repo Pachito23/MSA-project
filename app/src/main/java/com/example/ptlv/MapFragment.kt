@@ -26,10 +26,8 @@ import com.google.firebase.database.*
 
 class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
-    private var firebaseDatabase: FirebaseDatabase? = null
     private var databaseReference: DatabaseReference? = null
     private lateinit var mMap: GoogleMap
-    lateinit var marker_clicked: Marker
 
     data class Stop(val name:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0)
     var stop_list:MutableList<Stop> = mutableListOf()
@@ -90,8 +88,16 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         val back_button = view.findViewById<ImageView>(R.id.BackButton)
 
         back_button.setOnClickListener {
-            val mainActivityView = (activity as Activity)
-            mainActivityView.replaceFragment(Activity.main)
+            if(!Activity.use_stack_for_fragment)
+            {
+                val mainActivityView = (activity as Activity)
+                mainActivityView.replaceFragment(Activity.map)
+            }
+            else
+            {
+                val fragmentManager = requireActivity().supportFragmentManager
+                fragmentManager.popBackStack()
+            }
         }
     }
 
@@ -147,7 +153,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         //There was a vehicle marker info click
         if(vehicle_marker_list.contains(marker))
         {
-            marker_clicked = marker
+            Activity.selected_vehicle_id = marker.title.toString()
             val mainActivityView = (activity as Activity)
             mainActivityView.replaceFragment(Activity.vehicle_details)
         }else {
@@ -210,9 +216,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
     }
 
     private fun remove_listener_to_db() {
-        databaseListener?.let {
-            databaseReference!!.removeEventListener(it)
-        }
+        databaseReference!!.removeEventListener(databaseListener!!)
     }
 
     private fun get_vehicles(type:String, line: String) {
@@ -221,22 +225,24 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
             return
 
         //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/$type/$line/Vehicles")
+        databaseReference = Activity.firebaseDatabase!!.getReference("/$type/$line/Vehicles")
 
         //we add an event listener to verify when the data is changed
-        databaseReference!!.addValueEventListener(object : ValueEventListener {
+        databaseListener = databaseReference!!.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                vehicle_list.clear()
+                if(isAdded)
+                {
+                    vehicle_list.clear()
 
-                for (snap in snapshot.children) {
-                    val vehicle = snap.getValue(Vehicle::class.java)
-                    vehicle?.let {
-                        vehicle_list.add(it)
+                    for (snap in snapshot.children) {
+                        val vehicle = snap.getValue(Vehicle::class.java)
+                        vehicle?.let {
+                            vehicle_list.add(it)
+                        }
                     }
-                }
 
-                updateMarkersVehicles(type)
+                    updateMarkersVehicles(type)
+                }
             }
 
             //error getting the data
@@ -251,23 +257,24 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         if (type == "" || line == "")
             return
 
-        //firebase realtime database references
-        firebaseDatabase = FirebaseDatabase.getInstance("https://ptlv-402713-default-rtdb.europe-west1.firebasedatabase.app")
-        databaseReference = firebaseDatabase!!.getReference("/$type/$line/Stops")
+        databaseReference = Activity.firebaseDatabase!!.getReference("/$type/$line/Stops")
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                stop_list.clear()
+                if (isAdded)
+                {
+                    stop_list.clear()
 
-                for (snap in snapshot.children) {
-                    val Stop = snap.getValue(Stop::class.java)
-                    Stop?.let {
-                        stop_list.add(it)
+                    for (snap in snapshot.children) {
+                        val Stop = snap.getValue(Stop::class.java)
+                        Stop?.let {
+                            stop_list.add(it)
+                        }
                     }
-                }
 
-                addMarkersStops(type)
+                    addMarkersStops(type)
+                }
             }
 
             //error getting the data
