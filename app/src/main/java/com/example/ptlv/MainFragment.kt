@@ -12,7 +12,10 @@ import android.widget.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.gms.location.*
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -20,7 +23,6 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.database.*
-import com.google.android.gms.location.LocationCallback
 
 
 class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
@@ -145,6 +147,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 id: Long
             ) {
                 val selectedItem = parent?.getItemAtPosition(position).toString()
+                (parent!!.getChildAt(0) as TextView).textSize = 20F
                 type = selectedItem
                 get_transport_line(type)
             }
@@ -161,6 +164,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 id: Long
             ) {
                 val selectedItem = parent?.getItemAtPosition(position).toString()
+                (parent!!.getChildAt(0) as TextView).textSize = 20F
                 line = selectedItem
             }
 
