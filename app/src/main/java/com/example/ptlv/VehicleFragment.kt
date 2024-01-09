@@ -35,8 +35,7 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private lateinit var mMap: GoogleMap
 
-    data class Alert(val enabled:Boolean = false, val impact:String = "N/a", val message:String = "N/a")
-    var alerts_list:MutableList<Alert> = mutableListOf()
+    var alerts_list:MutableList<Activity.Alert> = mutableListOf()
 
     data class Stop(val name:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0)
     var stop_list:MutableList<Stop> = mutableListOf()
@@ -94,6 +93,11 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         NewsBannerTextView.isSelected = true
         WarningIcon = view.findViewById<ImageView>(R.id.VehicleWarningIcon)
         WarningIcon.visibility = View.INVISIBLE
+
+        WarningIcon.setOnClickListener {
+            val popup = PopupAlerts(requireContext(), alerts_list)
+            popup.show()
+        }
 
         VehicleLineTextView.text = "${Activity.main.line}"
         VehicleTypeTextView.text = "${Activity.main.type}"
@@ -311,7 +315,7 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         })
     }
 
-    private fun is_line_impacted(alert: Alert): Boolean {
+    private fun is_line_impacted(alert: Activity.Alert): Boolean {
         return alert.impact.contains("${Activity.main.type} ${Activity.main.line}")
     }
 
@@ -330,7 +334,7 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 alerts_list.clear()
 
                 for (snap in snapshot.children) {
-                    val alert = snap.getValue(VehicleFragment.Alert::class.java)
+                    val alert = snap.getValue(Activity.Alert::class.java)
                     alert?.let {
                         if(it.enabled && is_line_impacted(it))
                         {

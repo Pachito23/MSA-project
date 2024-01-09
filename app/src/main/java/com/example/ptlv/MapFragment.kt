@@ -1,6 +1,7 @@
 package com.example.ptlv
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -282,7 +283,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         return pattern.matches(type)
     }
 
-    private fun Icon_image(type: String, width: Int, height: Int): BitmapDescriptor {
+    private fun Icon_image(type: String, width: Int, height: Int, context: Context): BitmapDescriptor {
         var drawable:Drawable
         if (type == "Bus")
             drawable = resources.getDrawable(R.drawable.bus)
@@ -312,7 +313,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 MarkerOptions()
                     .position(pos)
                     .title(stop_list[stop].name)
-                    .icon(Icon_image("$type Stop",60,60))
+                    .icon(Icon_image("$type Stop",60,60,requireContext()))
             )
         }
     }
@@ -336,7 +337,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 MarkerOptions()
                     .position(pos)
                     .title(curr_vehicle.id.toString())
-                    .icon(Icon_image(type,150,75))
+                    .icon(Icon_image(type,150,75,requireContext()))
             )
             if (curr_marker != null) {
                 vehicle_marker_list.add(curr_marker)

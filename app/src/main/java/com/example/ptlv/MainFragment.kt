@@ -48,8 +48,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
     lateinit var WarningIcon:ImageView
     var AlertMessage:String = ""
 
-    data class Alert(val enabled:Boolean = false, val impact:String = "N/a", val message:String = "N/a")
-    var alerts_list:MutableList<Alert> = mutableListOf()
+    var alerts_list:MutableList<Activity.Alert> = mutableListOf()
 
     data class Transport_Type(
         val name: String = ""
@@ -186,6 +185,11 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
         NewsBannerTextView.isSelected = true
         WarningIcon = view.findViewById<ImageView>(R.id.WarningIcon)
         WarningIcon.visibility = View.INVISIBLE
+
+        WarningIcon.setOnClickListener {
+            val popup = PopupAlerts(requireContext(), alerts_list)
+            popup.show()
+        }
     }
 
     private fun get_alerts() {
@@ -200,7 +204,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 alerts_list.clear()
 
                 for (snap in snapshot.children) {
-                    val alert = snap.getValue(MainFragment.Alert::class.java)
+                    val alert = snap.getValue(Activity.Alert::class.java)
                     alert?.let {
                         if(alert.enabled)
                         {

@@ -13,6 +13,7 @@ import com.google.firebase.database.*
 /*
 
     To do:
+        - add an icon or smth to the end of the dialog xml to improve the design layout
         - solve more visual errors
             Main fragment: spinners fonts & heights, textview font & heights, map height
         - temperature color variable/add different emoji based on value for temp, humidity and air quality
@@ -24,6 +25,8 @@ import com.google.firebase.database.*
 
 @Suppress("DEPRECATION")
 class Activity : AppCompatActivity()  {
+
+    data class Alert(val enabled:Boolean = false, val impact:String = "N/a", val message:String = "N/a")
 
     companion object{
         var map = MapFragment()
