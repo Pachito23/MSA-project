@@ -1,7 +1,7 @@
 package com.example.ptlv
 
 import android.Manifest
-import android.content.Context
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,11 +23,18 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.*
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.firebase.database.*
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
 
 
+@Suppress("DEPRECATION")
 class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private var databaseReference: DatabaseReference? = null
@@ -44,7 +50,7 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     data class Vehicle(val id:Int = 0, val nextStop:String = "N/a", val lat:Double = 0.0, val long:Double = 0.0,
                         val humidity:Int = 0, val temp:Double = 0.0, val time_to_next_stop:Int = 0, val air_quality:String = "N/a")
-    var vehicle_key:String = ""
+
     lateinit var vehicle:Vehicle
     var vehicle_marker: Marker? = null
 
@@ -100,8 +106,8 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
             popup.show()
         }
 
-        VehicleLineTextView.text = "${Activity.main.line}"
-        VehicleTypeTextView.text = "${Activity.main.type}"
+        VehicleLineTextView.text = Activity.main.line
+        VehicleTypeTextView.text = Activity.main.type
 
         // Return view
         return view
@@ -137,7 +143,7 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
             val success = my_map.setMapStyle(
                 MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.big_map_config))
 
-            my_map?.let {
+            my_map.let {
                 mMap = it
                 if (checkLocationPermission()) {
                     // Enable My Location layer if permission is granted
@@ -181,6 +187,7 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -196,9 +203,10 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         }
     }
 
+    // In case operations needs to be done on location change
     override fun onLocationChanged(location: Location) {
         // Called when the location has changed
-        val currentLocation = LatLng(location.latitude, location.longitude)
+        //val currentLocation = LatLng(location.latitude, location.longitude)
     }
 
     private fun startLocationUpdates() {
@@ -222,16 +230,14 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private fun get_vehicle_data() {
 
-        databaseReference = Activity.firebaseDatabase!!.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/Vehicle${Activity.selected_vehicle_id}")
+        databaseReference = Activity.firebaseDatabase.getReference("/${Activity.main.type}/${Activity.main.line}/Vehicles/Vehicle${Activity.selected_vehicle_id}")
 
         //we add an event listener to verify when the data is changed
         databaseListener = databaseReference!!.addValueEventListener(object : ValueEventListener {
+            @SuppressLint("SetTextI18n")
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (isAdded) {
                     vehicle = snapshot.getValue(Vehicle::class.java)!!
-
-                    println(vehicle)
-                    println("Here")
 
                     NextStationTextView.text = "Next stop: ${vehicle.nextStop} in ${vehicle.time_to_next_stop} min"
                     TempInsideTextView.text = "Inside: ${vehicle.temp}°C"
@@ -278,10 +284,10 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         if (type == "" || line == "")
             return
 
-        val databaseReference = Activity.firebaseDatabase!!.getReference("/$type/$line/Stops")
+        val databaseReference = Activity.firebaseDatabase.getReference("/$type/$line/Stops")
 
         //we add an event listener to verify when the data is changed
-        databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
+        databaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (isAdded)
                 {
@@ -314,10 +320,10 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         if (type == "" || line == "")
             return
 
-        val databaseReference = Activity.firebaseDatabase!!.getReference("/Alerts")
+        val databaseReference = Activity.firebaseDatabase.getReference("/Alerts")
 
         //we add an event listener to verify when the data is changed
-        databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
+        databaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (isAdded)
                 {
@@ -371,8 +377,9 @@ class VehicleFragment : Fragment(), OnMapReadyCallback, LocationListener {
         return pattern.matches(type)
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private fun Icon_image(type: String, width: Int, height: Int): BitmapDescriptor {
-        var drawable: Drawable
+        val drawable: Drawable
         if (type == "Bus")
             drawable = resources.getDrawable(R.drawable.bus)
         else if (type == "Bus Stop")

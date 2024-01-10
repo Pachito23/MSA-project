@@ -1,7 +1,7 @@
 package com.example.ptlv
 
 import android.Manifest
-import android.content.Context
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -24,6 +24,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.firebase.database.*
 
+@Suppress("DEPRECATION")
 class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private var databaseReference: DatabaseReference? = null
@@ -91,7 +92,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
             if(!Activity.use_stack_for_fragment)
             {
                 val mainActivityView = (activity as Activity)
-                mainActivityView.replaceFragment(Activity.map)
+                mainActivityView.replaceFragment(Activity.main)
             }
             else
             {
@@ -122,7 +123,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
             val success = my_map.setMapStyle(
                 MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.big_map_config))
 
-            my_map?.let {
+            my_map.let {
                 mMap = it
                 if (checkLocationPermission()) {
                     // Enable My Location layer if permission is granted
@@ -172,7 +173,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
             return true
         } else {
             ActivityCompat.requestPermissions(
-                requireContext() as android.app.Activity, // ?
+                requireContext() as android.app.Activity,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                 LOCATION_PERMISSION_REQUEST_CODE
             )
@@ -180,6 +181,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -197,7 +199,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     override fun onLocationChanged(location: Location) {
         // Called when the location has changed
-        val currentLocation = LatLng(location.latitude, location.longitude)
+        //val currentLocation = LatLng(location.latitude, location.longitude)
     }
 
     private fun startLocationUpdates() {
@@ -225,7 +227,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
             return
 
         //firebase realtime database references
-        databaseReference = Activity.firebaseDatabase!!.getReference("/$type/$line/Vehicles")
+        databaseReference = Activity.firebaseDatabase.getReference("/$type/$line/Vehicles")
 
         //we add an event listener to verify when the data is changed
         databaseListener = databaseReference!!.addValueEventListener(object : ValueEventListener {
@@ -257,7 +259,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         if (type == "" || line == "")
             return
 
-        databaseReference = Activity.firebaseDatabase!!.getReference("/$type/$line/Stops")
+        databaseReference = Activity.firebaseDatabase.getReference("/$type/$line/Stops")
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -290,8 +292,9 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
         return pattern.matches(type)
     }
 
-    private fun Icon_image(type: String, width: Int, height: Int, context: Context): BitmapDescriptor {
-        var drawable:Drawable
+    @SuppressLint("UseCompatLoadingForDrawables")
+    private fun Icon_image(type: String, width: Int, height: Int): BitmapDescriptor {
+        val drawable:Drawable
         if (type == "Bus")
             drawable = resources.getDrawable(R.drawable.bus)
         else if (type == "Bus Stop")
@@ -320,7 +323,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 MarkerOptions()
                     .position(pos)
                     .title(stop_list[stop].name)
-                    .icon(Icon_image("$type Stop",60,60,requireContext()))
+                    .icon(Icon_image("$type Stop", 60, 60))
             )
         }
     }
@@ -344,7 +347,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, LocationListener {
                 MarkerOptions()
                     .position(pos)
                     .title(curr_vehicle.id.toString())
-                    .icon(Icon_image(type,150,75,requireContext()))
+                    .icon(Icon_image(type, 150, 75))
             )
             if (curr_marker != null) {
                 vehicle_marker_list.add(curr_marker)

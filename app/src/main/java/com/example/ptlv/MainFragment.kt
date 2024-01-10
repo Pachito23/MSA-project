@@ -20,16 +20,16 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.firebase.database.*
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
 
 
 class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private lateinit var mMap: GoogleMap
-    var marker: Marker? = null
-    var databaseReference: DatabaseReference? = null
+    private var databaseReference: DatabaseReference? = null
 
     lateinit var transport_type_spinner: Spinner
     val transportModes = mutableListOf<String>()
@@ -51,13 +51,9 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     var alerts_list:MutableList<Activity.Alert> = mutableListOf()
 
-    data class Transport_Type(
-        val name: String = ""
-    )
-
     fun get_transport_type() {
 
-        databaseReference = Activity.firebaseDatabase!!.reference
+        databaseReference = Activity.firebaseDatabase.reference
 
         transportModes.clear()
 
@@ -86,7 +82,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     fun get_transport_line(type:String) {
 
-        databaseReference = Activity.firebaseDatabase!!.getReference(type)
+        databaseReference = Activity.firebaseDatabase.getReference(type)
 
         transportLines.clear()
 
@@ -176,7 +172,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
         myButton.setOnClickListener {
             if(line != "")
             {
-                var mainActivityView = (activity as Activity)
+                val mainActivityView = (activity as Activity)
                 mainActivityView.replaceFragment(Activity.map)
             }
             else
@@ -197,7 +193,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     private fun get_alerts() {
 
-        databaseReference = Activity.firebaseDatabase!!.getReference("/Alerts")
+        databaseReference = Activity.firebaseDatabase.getReference("/Alerts")
 
         //we add an event listener to verify when the data is changed
         databaseReference!!.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -244,16 +240,14 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
-        if (spinner_id != null) {
-            spinner_id.adapter = adapter
-        }
+        spinner_id.adapter = adapter
     }
 
     override fun onMapReady(my_map: GoogleMap) {
 
         Activity.Gps_Status(requireContext())
 
-        my_map?.let {
+        my_map.let {
             mMap = it
             if (checkLocationPermission()) {
                 // Enable My Location layer if permission is granted
@@ -291,6 +285,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -308,7 +303,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, LocationListener {
 
     override fun onLocationChanged(location: Location) {
         // Called when the location has changed
-        val currentLocation = LatLng(location.latitude, location.longitude)
+        //val currentLocation = LatLng(location.latitude, location.longitude)
     }
 
     private fun startLocationUpdates() {
